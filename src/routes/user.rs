@@ -1,16 +1,28 @@
-use actix_web::{get, web, HttpResponse, Responder};
+use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 
-#[get("/profile")]
-async fn profile() -> impl Responder {
+#[get("/{user_id}")]
+async fn get_user() -> impl Responder {
     HttpResponse::Ok().body("User Profile")
 }
 
-#[get("/settings")]
-async fn settings() -> impl Responder {
-    HttpResponse::Ok().body("User Settings")
+#[post("/")]
+async fn create_user() -> impl Responder {
+    HttpResponse::Ok().body("New User")
+}
+
+#[put("/")]
+async fn update_user() -> impl Responder {
+    HttpResponse::Ok().body("User Update")
+}
+
+#[delete("/")]
+async fn delete_user() -> impl Responder {
+    HttpResponse::Ok().body("User Delete")
 }
 
 pub fn init_routes(cfg: &mut web::ServiceConfig) {
-    cfg.service(profile)
-       .service(settings);
+    cfg.service(get_user)
+       .service(create_user)
+       .service(update_user)
+       .service(delete_user);
 }
