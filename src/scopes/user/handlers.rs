@@ -1,21 +1,57 @@
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::{web, HttpResponse, Responder, Result};
+use serde::Serialize;
 
-pub async fn get_users() -> impl Responder {
-    HttpResponse::Ok().body("User Profile")
+#[derive(Serialize)]
+struct User {
+  username: String,
+  email: String,
 }
 
-pub async fn get_user() -> impl Responder {
-    HttpResponse::Ok().body("User Profile")
+struct Users {
+  users: [User]
 }
 
-pub async fn create_user() -> impl Responder {
-    HttpResponse::Ok().body("New User")
+pub async fn get_users() -> Result <impl Responder> {
+
+  let users = vec![
+    User {
+        username: "ivan".into(),
+        email: "ivan@gmail.com".into(),
+    },
+    User {
+        username: "maria".into(),
+        email: "maria@example.com".into(),
+    },
+  ];
+
+  Ok(web::Json(users))
 }
 
-pub async fn update_user() -> impl Responder {
-    HttpResponse::Ok().body("User Update")
+pub async fn get_user() -> Result <impl Responder> {
+    
+  let obj = User {
+    username: "ivan".to_string(),
+    email: "ivan@gmail.com".into(),
+  };
+  Ok(web::Json(obj))
+}
+
+pub async fn create_user() -> Result <impl Responder> {
+  let obj = User {
+    username: "ivan".to_string(),
+    email: "ivan@gmail.com".into(),
+  };
+  Ok(web::Json(obj))
+}
+
+pub async fn update_user() -> Result <impl Responder> {
+  let obj = User {
+    username: "ivan".to_string(),
+    email: "ivan@gmail.com".into(),
+  };
+  Ok(web::Json(obj))
 }
 
 pub async fn delete_user() -> impl Responder {
-    HttpResponse::Ok().body("User Delete")
+    HttpResponse::Ok().finish()
 }
