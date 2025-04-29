@@ -1,28 +1,20 @@
-use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
-
-#[get("/{user_id}")]
-async fn get_user() -> impl Responder {
-    HttpResponse::Ok().body("User Profile")
-}
-
-#[post("/")]
-async fn create_user() -> impl Responder {
-    HttpResponse::Ok().body("New User")
-}
-
-#[put("/")]
-async fn update_user() -> impl Responder {
-    HttpResponse::Ok().body("User Update")
-}
-
-#[delete("/")]
-async fn delete_user() -> impl Responder {
-    HttpResponse::Ok().body("User Delete")
-}
-
+use actix_web::{web};
+use crate::middlewares;
+use crate::scopes::user::handlers::{
+  get_users,
+  get_user,
+  create_user,
+  update_user,
+  delete_user,
+};
 pub fn init_routes(cfg: &mut web::ServiceConfig) {
-    cfg.service(get_user)
-       .service(create_user)
-       .service(update_user)
-       .service(delete_user);
+    cfg.service(
+        web::scope("/user")
+          .wrap(middlewares::auth::AuthMiddleware)
+          .route("", web::get().to(get_users))
+          .route("/{id}", web::get().to(get_user))
+          .route("", web::post().to(create_user))
+          .route("/{id}", web::put().to(update_user))
+          .route("/{id}", web::delete().to(delete_user))
+    );
 }

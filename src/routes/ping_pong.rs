@@ -1,4 +1,4 @@
-use actix_web::{get, web, Responder, Result};
+use actix_web::{web, Responder, Result};
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -6,7 +6,6 @@ struct Pong {
     result: String
 }
 
-#[get("/")]
 async fn ping_pong() -> Result<impl Responder> {
     let obj = Pong {
         result: "pong".to_string(),
@@ -15,5 +14,8 @@ async fn ping_pong() -> Result<impl Responder> {
 }
 
 pub fn init_routes(cfg: &mut web::ServiceConfig) {
-  cfg.service(ping_pong);
+  cfg.service(
+    web::scope("/ping")
+      .route("", web::get().to(ping_pong))
+  );
 }
