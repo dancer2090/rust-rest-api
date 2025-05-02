@@ -1,11 +1,19 @@
 use serde::Serialize;
-use std::fmt::Display;
+use thiserror::Error;
 
 #[derive(Serialize, Debug)]
 pub struct ResponseError {
   pub error: String
 }
 
-enum Errors {
-  UserExistsError,
+#[derive(thiserror::Error, Debug)]
+#[error("Bad Request: {message}")]
+pub struct BadRequest {
+    message : String
+}
+
+#[derive(Error, Debug)]
+pub enum Error {
+    #[error("Bad request")]
+    BadRequest(#[from] BadRequest),
 }
