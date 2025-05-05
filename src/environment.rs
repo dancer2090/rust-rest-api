@@ -6,6 +6,7 @@ pub struct ApiConfig {
     pub api_host: String,
     pub api_port: u16,
     pub api_token: String,
+    pub database_url: String,
 }
 
 pub fn get_api_config() -> ApiConfig {
