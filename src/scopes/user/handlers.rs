@@ -1,92 +1,60 @@
 use actix_web::{web, HttpResponse, Responder, Result};
-use serde_json;
-use uuid::Uuid;
-use std::fs::File;
-use std::io::Write;
-use crate::scopes::user::types::{User, UserBody, UserParams,};
+use validator::Validate;
+use crate::scopes::user::types::{CreateUserBody, UserParams, UpdateUserBody};
+use crate::scopes::user::service as UserService;
 use crate::errors;
 
-fn add_user(username: String, email: String) -> Result<User, String> {
-  let uuid = Uuid::new_v4();
-  
-  let user = User {
-    id: uuid,
-    email,
-    username
-  };
-
-  add_to_file(user.clone())?;
-  
-  Ok(user)
-}
-
-fn add_to_file(user: User) -> Result<(), String> {
-  let mut users = get_all_users();
-
-  let user_exists = match users.iter().find(|u| u.email == user.email) {
-    Some(user) => true,
-    None => false,
-  };
-
-  users.push(user);
-
-  match user_exists {
-      false => {
-        let list_as_json = serde_json::to_string(&users).unwrap();
-        let mut file = File::create("users.json").expect("Cant create users.json");
-        file.write_all(list_as_json.as_bytes()).expect("Cannot write to the file!");
-      },
-      true => return Err("User already exists".to_string()),
-  };
-  Ok(())
-}
-
-fn get_all_users() -> Vec<User> {
-    let file = File::open("users.json").expect("File users.json not found");
-    let users: Vec<User> = serde_json::from_reader(file).expect("Fail to read users.json");
-    users
-}
 
 pub async fn get_users() -> Result <impl Responder> {
-  Ok(web::Json(get_all_users()))
+  Ok(web::Json(UserService::get_all_users()))
 }
 
-pub async fn get_user(path: web::Path<UserParams>) -> impl Responder {
+pub async fn get_user(path: web::Path<UserParams>) -> Result <impl Responder, actix_web::Error > {
   let params = path.into_inner();
-  println!("{}", params.id);
-
-  let user = get_all_users().into_iter().find(|user| user.id == params.id);
   
-  let error = errors::ResponseError {
-    error: "User not found".to_string()
-  };
+  if let Err(e) = params.validate() {
+    return Ok(HttpResponse::BadRequest().json(e));
+  }
+
+  let user = UserService::get_all_users().into_iter().find(|user| user.id == params.id);
 
   match user {
-    Some(user) => HttpResponse::Ok().json(user),
-    None => HttpResponse::NotFound().json(error),
+    Some(user) => Ok(HttpResponse::Ok().json(user)),
+    None => Ok(HttpResponse::NotFound().json(errors::ResponseError {error: "User not found".to_string()})),
   }
 }
 
-pub async fn create_user(body: web::Json<UserBody>) -> Result <impl Responder> {
+pub async fn create_user(body: web::Json<CreateUserBody>) -> Result <impl Responder, actix_web::Error > {
+
+  if let Err(e) = body.validate() {
+    return Ok(HttpResponse::BadRequest().json(e));
+  }
+
   let body = body.into_inner();
 
-  let user = add_user(body.username, body.email);
+  let user = UserService::add_user(body.username, body.email);
 
   match user {
       Ok(user) => Ok(HttpResponse::Ok().json(user)),
-      Err(e) => Err(actix_web::error::ErrorBadRequest(e )),
+      Err(e) => Ok(HttpResponse::BadRequest().json(errors::ResponseError { error: e })),
   }
-  // match user {
-  //     Ok(user) => HttpResponse::Ok().json(user),
-  //     Err(e) => HttpResponse::NotFound().json(errors::ResponseError { error: e }),
-  // }
 }
 
-pub async fn update_user() -> Result <impl Responder> {
-  let user: User = get_all_users()[0].clone();
-  Ok(web::Json(user))
+pub async fn update_user(path: web::Path<UserParams>, body: web::Json<UpdateUserBody>) -> Result <impl Responder, actix_web::Error > {
+  if let Err(e) = body.validate() {
+    return Ok(HttpResponse::BadRequest().json(e));
+  }
+  let body = body.into_inner();
+  let params = path.into_inner();
+  let user = UserService::edit_user(params.id, body.username, body.email);
+  match user {
+    Ok(user) => Ok(HttpResponse::Ok().json(user)),
+    Err(e) => Ok(HttpResponse::BadRequest().json(errors::ResponseError { error: e })),
+  }
 }
 
-pub async fn delete_user() -> Result <impl Responder> {
-  Ok(HttpResponse::Ok().finish())    
+pub async fn delete_user(path: web::Path<UserParams>) -> Result <impl Responder> {
+  let params = path.into_inner();
+  UserService::remove_user(params.id);
+  Ok(HttpResponse::Ok().finish()) 
 }
